@@ -26,7 +26,7 @@ const getWorkingServers = (sentServers) => {
     Promise.all(arr)
       .then((data) => {
         const responseStatus = data.map(response => {
-          if(response.statusCode >= 200 && response.statusCode <= 299){
+          if(response.statusCode >= 200 && response.statusCode <= 299) {
             return {
               url: response.request.href,
               statusCode: response.statusCode
@@ -45,26 +45,43 @@ const getWorkingServers = (sentServers) => {
       });
   });
 };
-const findServer = async (sentServers) => {
+const findServer = (sentServers) => {
 
-  const workingServers = await getWorkingServers(sentServers);
-  sentServers = _.map(sentServers, (sentServer) => {
-    sentServer.url = sentServer.url.replace(/(^\w+:|^)\/\//, '').toLowerCase();
-    return sentServer;
-  });
+  return new Promise(async (resolve, reject) => {
 
-  _.forEach(workingServers, (workingServer) => {
-    const matchedServer = _.find(sentServers, { url: workingServer.url.replace(/(^\w+:|^)\/\//, '').replace(/\/$/, '').replace('www.','') });
-    workingServer.priority = matchedServer.priority;
+    let workingServers = await getWorkingServers(sentServers);
+    if(_.isEmpty(workingServers)) {
+      reject("No Available Server!");
+    }
+    sentServers = _.map(sentServers, (sentServer) => {
+      sentServer.url = sentServer.url.replace(/(^\w+:|^)\/\//, '').toLowerCase();
+      return sentServer;
+    });
+
+    _.forEach(workingServers, (workingServer) => {
+      const matchedServer = _.find(sentServers, { url: workingServer.url
+                                                    .replace(/(^\w+:|^)\/\//, '')
+                                                    .replace(/\/$/, '')
+                                                    .replace('www.','')
+                                                });
+      workingServer.priority = matchedServer.priority;
+    });
+    workingServers = _.sortBy(workingServers, 'priority');
+    console.log(workingServers);
+    resolve(workingServers[0])
   });
-  console.log(workingServers)
 };
 
 app.post('/servers/available', async function(req, res) {
 
-  
   const sentServers = req.body;
-  const availableServer = await findServer(sentServers);
+  await findServer(sentServers)
+    .then(workingServer => {
+      res.send(workingServer);
+    })
+    .catch(error => {
+      res.send({errorMessage: error});
+    });
 });
 
 app.listen(3030, (err) => {
