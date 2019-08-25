@@ -17,7 +17,8 @@ app.post('/servers/available', async function(req, res) {
     });
 });
 
-app.listen(3030, (err) => {
+const port = process.env.PORT || 3030;
+app.listen(port, (err) => {
   if (err) console.log(err);
-  console.log(`Running on port ${3030}`);
+  console.log(`Running on port ${port}`);
 });
