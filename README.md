@@ -49,7 +49,8 @@ https://vast-ocean-57397.herokuapp.com/servers/available
 ```
 
 2) that will return that there is no valid server
-```[
+```
+[
 	{
  "url": "https://httpstat.us/401",
  "priority": 1
