@@ -13,7 +13,7 @@ app.post('/servers/available', async function(req, res) {
       res.send(workingServer);
     })
     .catch(error => {
-      res.send({errorMessage: error});
+      res.send({errorMessage: error.message});
     });
 });
 

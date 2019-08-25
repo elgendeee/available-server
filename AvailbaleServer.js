@@ -84,7 +84,9 @@ const findServer = (sentServers) => {
     await getWorkingServers(sentServers)
       .then(workingServers => {
         if(_.isEmpty(workingServers)) {
-          reject("No Available Server!");
+          reject({
+            message: "No Valid Server!"
+        });
         }
         sentServers = _.map(sentServers, (sentServer) => {
           sentServer.url = sentServer.url.replace(/(^\w+:|^)\/\//, '').toLowerCase();
