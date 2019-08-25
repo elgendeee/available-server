@@ -3,24 +3,62 @@ const _ = require('lodash');
 
 const getWorkingServers = (sentServers) => {
 
-  return new Promise((resolve, reject) => {
-    const urls = sentServers.map(server => {
-      return server.url;
+  function executeAllPromises(promises) {
+    var resolvingPromises = promises.map(function(promise) {
+      return new Promise(function(resolve) {
+        var payload = new Array(2);
+        promise.then(function(result) {
+            payload[0] = result;
+          })
+          .catch(function(error) {
+            payload[1] = error;
+          })
+          .then(function() {
+            resolve(payload);
+          });
+      });
     });
-    const arr = [];
-    urls.forEach(url => {
-      arr.push(
-        request({
+    var errors = [];
+    var results = [];
+    return Promise.all(resolvingPromises)
+      .then(function(items) {
+        items.forEach(function(payload) {
+          if (payload[1]) {
+            errors.push(payload[1]);
+          } else {
+            results.push(payload[0]);
+          }
+        });
+  
+        return {
+          errors: errors,
+          results: results
+        };
+      });
+  }
+
+  const urls = sentServers.map(server => {
+    return server.url;
+  });
+
+  const arr = [];
+  urls.forEach(url => {
+    arr.push(
+      new Promise((resolve, reject) => {
+        resolve(request({
           url: url,
           timeout: 5000,
           method: 'GET',
           resolveWithFullResponse: true
-        })
-      )
-    });
-    Promise.all(arr)
-      .then((data) => {
-        const responseStatus = data.map(response => {
+        }))
+      })
+    )
+  });
+
+  return new Promise((resolve, reject) => {
+    executeAllPromises(arr).then(function(items) {
+      if(!_.isEmpty(items.results)) {
+        const responseStatus = items.results.map(response => {
           if(response.statusCode >= 200 && response.statusCode <= 299) {
             return {
               url: response.request.href,
@@ -28,16 +66,14 @@ const getWorkingServers = (sentServers) => {
             };
           }
         });
-        resolve(responseStatus);
-      })
-      .catch(error => { 
+        resolve(responseStatus)
+      } else {
         reject({
-          message: "invalid url caused error",
-          url: error.options.url,
-          Errror: error.name,
-          statusCode: error.statusCode
-        });
-      });
+            message: "No Valid Server!"
+        })
+      }
+    
+    });
   });
 };
 
@@ -45,25 +81,30 @@ const findServer = (sentServers) => {
 
   return new Promise(async (resolve, reject) => {
 
-    let workingServers = await getWorkingServers(sentServers);
-    if(_.isEmpty(workingServers)) {
-      reject("No Available Server!");
-    }
-    sentServers = _.map(sentServers, (sentServer) => {
-      sentServer.url = sentServer.url.replace(/(^\w+:|^)\/\//, '').toLowerCase();
-      return sentServer;
-    });
-
-    _.forEach(workingServers, (workingServer) => {
-      const matchedServer = _.find(sentServers, { url: workingServer.url
-                                                    .replace(/(^\w+:|^)\/\//, '')
-                                                    .replace(/\/$/, '')
-                                                    .replace('www.','')
-                                                });
-      workingServer.priority = matchedServer.priority;
-    });
-    workingServers = _.sortBy(workingServers, 'priority');
-    resolve(workingServers[0])
+    await getWorkingServers(sentServers)
+      .then(workingServers => {
+        if(_.isEmpty(workingServers)) {
+          reject("No Available Server!");
+        }
+        sentServers = _.map(sentServers, (sentServer) => {
+          sentServer.url = sentServer.url.replace(/(^\w+:|^)\/\//, '').toLowerCase();
+          return sentServer;
+        });
+    
+        _.forEach(workingServers, (workingServer) => {
+          const matchedServer = _.find(sentServers, { url: workingServer.url
+                                                        .replace(/(^\w+:|^)\/\//, '')
+                                                        .replace(/\/$/, '')
+                                                        .replace('www.','')
+                                                    });
+          workingServer.priority = matchedServer.priority;
+        });
+        workingServers = _.sortBy(workingServers, 'priority');
+        resolve(workingServers[0])
+      })
+      .catch(error => {
+        reject(error);
+      });
   });
 };
 
