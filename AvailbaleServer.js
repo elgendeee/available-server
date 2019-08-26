@@ -1,41 +1,41 @@
 const request = require('request-promise-native');
 const _ = require('lodash');
 
-const getWorkingServers = (sentServers) => {
-
-  function executeAllPromises(promises) {
-    var resolvingPromises = promises.map(function(promise) {
-      return new Promise(function(resolve) {
-        var payload = new Array(2);
-        promise.then(function(result) {
-            payload[0] = result;
-          })
-          .catch(function(error) {
-            payload[1] = error;
-          })
-          .then(function() {
-            resolve(payload);
-          });
-      });
-    });
-    var errors = [];
-    var results = [];
-    return Promise.all(resolvingPromises)
-      .then(function(items) {
-        items.forEach(function(payload) {
-          if (payload[1]) {
-            errors.push(payload[1]);
-          } else {
-            results.push(payload[0]);
-          }
+function executeAllPromises(promises) {
+  var resolvingPromises = promises.map(function(promise) {
+    return new Promise(function(resolve) {
+      var payload = new Array(2);
+      promise.then(function(result) {
+          payload[0] = result;
+        })
+        .catch(function(error) {
+          payload[1] = error;
+        })
+        .then(function() {
+          resolve(payload);
         });
-  
-        return {
-          errors: errors,
-          results: results
-        };
+    });
+  });
+  var errors = [];
+  var results = [];
+  return Promise.all(resolvingPromises)
+    .then(function(items) {
+      items.forEach(function(payload) {
+        if (payload[1]) {
+          errors.push(payload[1]);
+        } else {
+          results.push(payload[0]);
+        }
       });
-  }
+
+      return {
+        errors: errors,
+        results: results
+      };
+    });
+};
+
+const getWorkingServers = (sentServers) => {
 
   const urls = sentServers.map(server => {
     return server.url;
