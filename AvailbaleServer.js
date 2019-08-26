@@ -2,9 +2,9 @@ const request = require('request-promise-native');
 const _ = require('lodash');
 
 function executeAllPromises(promises) {
-  var resolvingPromises = promises.map(function(promise) {
+  const resolvingPromises = promises.map(function(promise) {
     return new Promise(function(resolve) {
-      var payload = new Array(2);
+      const payload = new Array(2);
       promise.then(function(result) {
           payload[0] = result;
         })
@@ -16,8 +16,8 @@ function executeAllPromises(promises) {
         });
     });
   });
-  var errors = [];
-  var results = [];
+  const errors = [];
+  const results = [];
   return Promise.all(resolvingPromises)
     .then(function(items) {
       items.forEach(function(payload) {
