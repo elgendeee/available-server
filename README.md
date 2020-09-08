@@ -20,6 +20,11 @@ http://localhost:3030/servers/available
 ```bash
 https://vast-ocean-57397.herokuapp.com/servers/available
 ```
+## npm package
+```bash
+https://www.npmjs.com/package/find-available-server
+```
+
 ## examples of servers
 
 1) that will return the lowest priority valid url
